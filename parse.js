@@ -5,6 +5,7 @@ var cheerio = require('cheerio')
 var flatten = require('flat')
 
 module.exports = {
+
     // Parse out all Option Ids html
     optionIds : function (html) {
         var matches = html.match(/(option_id=)(\d+)/g)
@@ -18,6 +19,7 @@ module.exports = {
             return ids
     },
 
+    // Parse global Options from html page
     globalOptions : function (html) {
         var $ = cheerio.load(html)
         var options = {}
@@ -28,6 +30,7 @@ module.exports = {
         return options
     },
 
+    //Parse global option ids and names from given html page
     globals : function (html) {
         var $ = cheerio.load(html)
         var ids = []
@@ -43,6 +46,7 @@ module.exports = {
         return ids
     },
 
+    //Parse the old ID and product code from old site's html
     products : function (html) {
         var products = []
         var $ = cheerio.load(html)

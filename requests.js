@@ -1,3 +1,5 @@
+//helper functions for http requests
+
 var request = require('request-promise')
 var cheerio = require('cheerio')
 var x = require('./helpers.js')
