@@ -5,7 +5,7 @@
   "main": "productPageScrape.js",
   "dependencies": {
     "cheerio": "^0.19.0",
-    "request-promise": "^1.0.0",
+    "request-promise": "^1.0.0"
   },
   "devDependencies": {},
   "scripts": {
