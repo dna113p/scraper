@@ -1,37 +1,34 @@
 var cheerio = require('cheerio')
-var request = require('./requests.js')
-var parse = require('./parse.js')
 var Promise = require('bluebird')
 var fs = require('fs')
 
-var globalName = function (name) {
-    var globals = require('./globals.js')
-    return(globals[' '+name])
-}
+var request = require('./requests.js')
+var parse = require('./parse.js')
+//create product file with buildProductList.js
+var products = require('./products.js')
 
-// Returns a new option Object for submission with a form
-var createOption = function (optionsObj, productId) {
-    optionsObj["option_id"]                       = '0'
-    optionsObj["option_data[product_id]"]         = productId
-    optionsObj["object"]                          = 'product'
-    optionsObj["option_data[company_id]"]        = 1
-    optionsObj["dispatch[product_options.update]"] = 'Create'
-    delete optionsObj["product_id"]
 
-    return optionsObj
-}
+// Return Promise of http requests
+// transfers global options to new site
+var transferGlobals = function() { 
+    request.oldOptions().then(function (response) {
+        var arr = parse.optionIds(response)
+        console.log(arr.length + ' ids found')
+        var promises = []
+        arr.forEach(function(val) {
+            promises.push(request.getOldOption(val).then(function(response) {
+                var option = parse.createGlobal(parse.optionData(response))
+                return(request.postData(option))
+            }))
+        })
+        Promise.all(promises)
 
-// Returns a new option Object for submission with a form
-var createGlobal = function (optionsObj, productId) {
-    optionsObj["option_id"]                        = '0'
-    optionsObj["object"]                           = 'global'
-    optionsObj["option_data[company_id]"]          = 1
-    optionsObj["dispatch[product_options.update]"] = 'Create'
-
-    return optionsObj
+    })
 }
 
 
+// Return Promise of http requests
+// to delete all corrupt options
 var deleteBadOptions = function (id) {
     qs = {dispatch: 'products.update', product_id: id}
     return(request.getNewSite(qs).then(function(response){
@@ -44,20 +41,25 @@ var deleteBadOptions = function (id) {
     }))
 }
 
+// Return Promise of http requests
+// to add all new options to a product
 var addOptions = function (id, options) {
     var promises = []
     options.forEach(function(option) {
-        var newOption = createOption(option,id)
+        var newOption = parse.createOption(option,id)
         promises.push(request.postData(newOption).then(function(){
         }))
     })
     return Promise.all(promises)
 }
 
+
+// Return Promise of http requests
+// to add all global options to a product
 var addGlobalOptions = function (id, globals) {
     var promises = []
     globals.forEach(function(option) {
-        var gid = globalName(option.name);
+        var gid = parse.globalName(option.name);
         var data = {
             'product_id':id,
             'selected_section':'options',
@@ -71,11 +73,19 @@ var addGlobalOptions = function (id, globals) {
     return Promise.all(promises)
 }
 
-
+// Transferring each product requires 4 core parts
+// Find link from old product to new product
+// Delete corrupt options
+// Copy over global options
+// Copy over regular options
 var processProduct = function (product) {
+    // Link product code from old site to new product id
     return(request.apiGetCode(product.code).then(function (productId) {
+        // Delete corrupt options
         deleteBadOptions(productId).then(function() {
+            // Add Relevent Global Options
             addGlobalOptions(productId, product.globalOptions).then(function() {
+                // Add correct item options
                 addOptions(productId, product.options)
             })
         })
@@ -83,7 +93,7 @@ var processProduct = function (product) {
 
 }
 
-var products = require('./products.js')
+// Call this function to begin looping through products
 var main = function (key){
     console.log('Working on product' +key)
     if (products[key]) {
@@ -92,20 +102,4 @@ var main = function (key){
         })
     }
 }
-main(600)
 
-var transferGlobals = function() {
-
-    request.oldOptions().then(function (response) {
-        var arr = parse.optionIds(response)
-        console.log(arr.length + ' ids found')
-        var promises = []
-        arr.forEach(function(val) {
-            promises.push(request.getOldOption(val).then(function(response) {
-                var option = createGlobal(parse.optionData(response))
-                return(request.postData(option))
-            }))
-        })
-        Promise.all(promises)
-    })
-}

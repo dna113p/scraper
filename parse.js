@@ -1,3 +1,5 @@
+// This file contains functions to help with parsing necessary data from html files
+
 var serialize = require('form-serialize')
 var domify = require('domify')
 var jsdom = require('jsdom').jsdom()
@@ -69,6 +71,34 @@ module.exports = {
         var obj = serialize(form, { hash: true });
 
         return flatten(obj)
+    },
+
+    // Returns a new option Object for submission with a form
+    createOption : function (optionsObj, productId) {
+        optionsObj["option_id"]                       = '0'
+        optionsObj["option_data[product_id]"]         = productId
+        optionsObj["object"]                          = 'product'
+        optionsObj["option_data[company_id]"]        = 1
+        optionsObj["dispatch[product_options.update]"] = 'Create'
+        delete optionsObj["product_id"]
+
+        return optionsObj
+    },
+
+    // Returns a new global option Object for submission with a form
+    createGlobal : function (optionsObj, productId) {
+        optionsObj["option_id"]                        = '0'
+        optionsObj["object"]                           = 'global'
+        optionsObj["option_data[company_id]"]          = 1
+        optionsObj["dispatch[product_options.update]"] = 'Create'
+
+        return optionsObj
+    },
+
+    // Helper for adding correct global option name
+    globalName : function (name) {
+        var globals = require('./globals.js')
+        return(globals[' '+name])
     }
 
 }
